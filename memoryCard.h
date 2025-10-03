@@ -1,6 +1,6 @@
 #pragma once
 
-int reviewCompleted;
+extern int reviewCompleted;
 
 void startMemoryCardGame(LinkedList* head, const int mode);
 

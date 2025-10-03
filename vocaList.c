@@ -2,14 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <conio.h>
-#include <windows.h>
+#ifdef _WIN32
+    #include <conio.h>
+    #include <windows.h>
+#endif
 #include "vocaList.h"
 #include "memoryCard.h"
 #include "ui.h"
 
 
-// Function to create a new node
+// Create a new doubly-linked list node with vocabulary data
 LinkedList* createNode(const char* voca, const char* mean)
 {
     LinkedList* newNode = (LinkedList*)malloc(sizeof(LinkedList));
@@ -28,7 +30,6 @@ LinkedList* createNode(const char* voca, const char* mean)
         return NULL;
     }
 
-    // Copy values to voca and mean
     strncpy(newNode->pVocaData->voca, voca, LEN);
     strncpy(newNode->pVocaData->mean, mean, LEN);
 
@@ -38,7 +39,7 @@ LinkedList* createNode(const char* voca, const char* mean)
     return newNode;
 }
 
-// Function to create a LinkedList from a file
+// Parse file and create linked list (format: "word meaning\n")
 LinkedList* createLinkedListFromFile(const char* filename)
 {
     FILE* file = fopen(filename, "r");
@@ -48,15 +49,16 @@ LinkedList* createLinkedListFromFile(const char* filename)
         return NULL;
     }
 
-    LinkedList* head = NULL;  // Pointer to the start of the list
-    LinkedList* tail = NULL;  // Pointer to the end of the list
+    LinkedList* head = NULL;
+    LinkedList* tail = NULL;
 
     char voca[LEN];
     char mean[LEN];
 
-    while (fscanf(file, "%s %[^\n]", voca, mean) != EOF) // Read voca and mean from file
+    // Read each line: first token is word, rest is meaning
+    while (fscanf(file, "%s %[^\n]", voca, mean) != EOF)
     {
-        LinkedList* newNode = createNode(voca, mean);  // Create a new node
+        LinkedList* newNode = createNode(voca, mean);
 
         if (newNode == NULL)
         {
@@ -64,13 +66,11 @@ LinkedList* createLinkedListFromFile(const char* filename)
             return NULL;
         }
 
-        // If it's the first node
         if (head == NULL)
         {
             head = newNode;
             tail = newNode;
         }
-        // If it's not the first node
         else
         {
             tail->pNext = newNode;
@@ -83,21 +83,21 @@ LinkedList* createLinkedListFromFile(const char* filename)
     return head;
 }
 
-// Function to print the contents of the list (entire voca and mean)
+// Print list in order (option: 1=both, 2=word only, 3=meaning only)
 void printLinkedList(LinkedList* head, const int option)
 {
     LinkedList* current = head;
     while (current != NULL)
     {
-        if (option == 1)  // Print entire voca and mean
+        if (option == 1)
         {
             printf("%s : %s\n", current->pVocaData->voca, current->pVocaData->mean);
         }
-        else if (option == 2)  // Print only voca
+        else if (option == 2)
         {
             printf("%s\n", current->pVocaData->voca);
         }
-        else if (option == 3)  // Print only mean
+        else if (option == 3)
         {
             printf("%s\n", current->pVocaData->mean);
         }
@@ -105,10 +105,10 @@ void printLinkedList(LinkedList* head, const int option)
     }
 }
 
-// Function to shuffle and print the list
+// Shuffle list using Fisher-Yates algorithm and print
 void printShuffledLinkedList(LinkedList* head, const int option)
 {
-    // Count the number of nodes
+    // Count nodes
     int count = 0;
     LinkedList* current = head;
     while (current != NULL)
@@ -117,9 +117,9 @@ void printShuffledLinkedList(LinkedList* head, const int option)
         current = current->pNext;
     }
 
-    // If there's only one node, no need to shuffle
     if (count < 2) return;
 
+    // Convert to array for shuffling
     LinkedList** nodes = (LinkedList**)malloc(count * sizeof(LinkedList*));
     current = head;
     for (int i = 0; i < count; i++)
@@ -128,8 +128,8 @@ void printShuffledLinkedList(LinkedList* head, const int option)
         current = current->pNext;
     }
 
-    // Shuffle the nodes
-    srand((unsigned int)time(NULL));  // Set random seed
+    // Fisher-Yates shuffle
+    srand((unsigned int)time(NULL));
     for (int i = 0; i < count; i++)
     {
         int j = rand() % count;
@@ -138,29 +138,28 @@ void printShuffledLinkedList(LinkedList* head, const int option)
         nodes[j] = temp;
     }
 
-    // Print the shuffled nodes
+    // Print shuffled order
     for (int i = 0; i < count; i++)
     {
 
-        if (option == 1)  // Print entire voca and mean
+        if (option == 1)
         {
             printf("%s : %s\n", nodes[i]->pVocaData->voca, nodes[i]->pVocaData->mean);
         }
-        else if (option == 2)  // Print only voca
+        else if (option == 2)
         {
             printf("%s\n", nodes[i]->pVocaData->voca);
         }
-        else if (option == 3)  // Print only mean
+        else if (option == 3)
         {
             printf("%s\n", nodes[i]->pVocaData->mean);
         }
     }
 
-    // Free memory
     free(nodes);
 }
 
-// Function to free the memory of the LinkedList
+// Free all nodes in the linked list
 void freeLinkedList(LinkedList* head)
 {
     LinkedList* current = head;
@@ -175,18 +174,22 @@ void freeLinkedList(LinkedList* head)
     }
 }
 
-// Comparison function for qsort
+// Case-insensitive comparison for qsort
 int compareVoca(const void* a, const void* b)
 {
     LinkedList* nodeA = *((LinkedList**)a);
     LinkedList* nodeB = *((LinkedList**)b);
+#ifdef _WIN32
     return strcmpi(nodeA->pVocaData->voca, nodeB->pVocaData->voca);
+#else
+    return strcasecmp(nodeA->pVocaData->voca, nodeB->pVocaData->voca);
+#endif
 }
 
-// Function to initialize the list at the start of the program
+// Initialize global lists: original order and alphabetically sorted
 void initList()
 {
-    // Create the original LinkedList from file
+    // Create original list from file
     head = createLinkedListFromFile(filename);
     if (head == NULL)
     {
@@ -194,23 +197,23 @@ void initList()
         return;
     }
 
-    // Create a sorted LinkedList (using qsort)
+    // Create sorted list
     sortedHead = createLinkedListFromFile(filename);
     LinkedList* current = sortedHead;
     int nodeCount = 0;
 
-    // Store the nodes of the list in an array
-    LinkedList* nodes[100]; // Store up to 100 nodes (adjust as needed)
+    // Convert to array for sorting (max 100 words)
+    LinkedList* nodes[100];
     while (current != NULL)
     {
         nodes[nodeCount++] = current;
         current = current->pNext;
     }
 
-    // Sort the array using qsort
+    // Sort alphabetically
     qsort(nodes, nodeCount, sizeof(LinkedList*), compareVoca);
 
-    // Recreate the linked list with sorted nodes
+    // Reconnect links in sorted order
     for (int i = 0; i < nodeCount - 1; i++)
     {
         nodes[i]->pNext = nodes[i + 1];
@@ -219,5 +222,5 @@ void initList()
     nodes[nodeCount - 1]->pNext = NULL;
     nodes[0]->pPrev = NULL;
 
-    sortedHead = nodes[0];  // Head of the sorted list
+    sortedHead = nodes[0];
 }

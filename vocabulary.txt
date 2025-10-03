@@ -1,25 +1,25 @@
-apple 林檎
-banana バナナ
-cat ネコ
-dog 犬
-life 生活、命
-giraffe キリン
-hawk タカ
-love 愛、恋
-pigeon 鳩
-price 価格、価値
-car 車
-soldier 兵士
-mouth 口
-rat ネズミ
-earth 地球、大地
-pill 丸薬
-math 数学
-ocean 洋
-machine 機械
-wallet 財布
-zebra シマウマ
-gift 贈り物
-candle キャンドル
-joke 冗談
-art 芸術、美術
+apple 사과
+banana 바나나
+cat 고양이
+dog 개
+life 생활, 삶
+giraffe 기린
+hawk 매
+love 사랑
+pigeon 비둘기
+price 가치, 가격
+car 자동차
+soldier 병사
+mouth 입
+rat 쥐
+earth 대지, 지구
+pill 알약
+math 수학
+ocean 대양, 바다
+machine 기계
+wallet 지갑
+zebra 얼룩말
+gift 선물
+candle 양초
+joke 농담
+art 미술, 예술

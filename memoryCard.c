@@ -2,13 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <conio.h>
-#include <windows.h>
+#ifdef _WIN32
+    #include <conio.h>
+    #include <windows.h>
+#else
+    #include <termios.h>
+    #include <unistd.h>
+    // getch() is implemented in ui.c
+    extern int getch(void);
+#endif
 #include "vocaList.h"
 #include "memoryCard.h"
 #include "ui.h"
 
+// Global flag to prevent infinite review loops
+int reviewCompleted = 0;
 
+// Start memory card game with specified mode (1=random, 2=alphabetical, 3=custom)
 void startMemoryCardGame(LinkedList* head, const int mode)
 {
     reviewCompleted = 0;
@@ -19,10 +29,9 @@ void startMemoryCardGame(LinkedList* head, const int mode)
         return;
     }
 
+    // Count total words
     int remaining = 0;
     LinkedList* current = head;
-
-    // Count the number of words
     while (current != NULL)
     {
         remaining++;
@@ -31,10 +40,11 @@ void startMemoryCardGame(LinkedList* head, const int mode)
 
     current = head;
 
-    // List to store words selected as 'Don't Know'
+    // Initialize review list for "Don't Know" words
     LinkedList* reviewListHead = NULL;
     LinkedList* reviewListTail = NULL;
 
+    // Convert linked list to array for shuffling/sorting
     int count = remaining;
     LinkedList** nodes = (LinkedList**)malloc(count * sizeof(LinkedList*));
     int listSize = 0;
@@ -45,7 +55,8 @@ void startMemoryCardGame(LinkedList* head, const int mode)
         current = current->pNext;
     }
 
-    if (mode == 1)
+    // Apply ordering based on mode
+    if (mode == 1)  // Random: shuffle using Fisher-Yates
     {
         srand((unsigned int)time(NULL));
         for (int i = 0; i < count; i++)
@@ -56,28 +67,30 @@ void startMemoryCardGame(LinkedList* head, const int mode)
             nodes[j] = temp;
         }
     }
-    else if (mode == 2)
+    else if (mode == 2)  // Alphabetical: sort
     {
         qsort(nodes, count, sizeof(LinkedList*), compareVoca);
     }
+    // mode == 3: Custom order (no change needed)
 
     current = nodes[0];
     reviewListHead = memoryCardRecursion(mode, count, remaining, nodes, current, reviewListHead, reviewListTail);
     free(nodes);
 
-    // Print message when the game is over
     printf("\nYou have been checked all words.\n");
 
-    // Check if there are words selected as 'Don't Know' for review
-    if (reviewCompleted == 0)  // Only show if review is not completed
+    // Prompt for review if there are "Don't Know" words
+    if (reviewCompleted == 0)
     {
         checkIfReview(reviewListHead, mode);
     }
 }
 
+// Main game loop: iterate through words and collect "Don't Know" items
 LinkedList* memoryCardRecursion(const int mode, const int count, int remaining,
     LinkedList** nodes, LinkedList* current, LinkedList* reviewListHead, LinkedList* reviewListTail)
 {
+    // Determine mode display text
     int i = 0;
     const char* modeText = 0;
     if (mode == 1)
@@ -114,7 +127,7 @@ LinkedList* memoryCardRecursion(const int mode, const int count, int remaining,
         {
             printf("\nMeaning: %s\n", nodes[i]->pVocaData->mean);
 
-            // Add words selected as 'Don't Know' to the review list
+            // Add to review list for later practice
             LinkedList* newNode = createNode(nodes[i]->pVocaData->voca, nodes[i]->pVocaData->mean);
             if (reviewListHead == NULL)
             {
@@ -133,9 +146,8 @@ LinkedList* memoryCardRecursion(const int mode, const int count, int remaining,
             getch();
             continue;
         }
-        remaining--;  // Decrease the number of remaining words
+        remaining--;
 
-        // Wait for user input and move to the next card
         printf("\nEnter any key to next!");
         getch();
         i++;
@@ -155,9 +167,10 @@ const int countReviewList(LinkedList* reviewListHead)
     return count;
 }
 
+// Prompt user to review "Don't Know" words (recursive spaced repetition)
 void checkIfReview(LinkedList* reviewListHead, const int mode)
 {
-    if (reviewListHead != NULL)  // Check if there are words in the 'Don't Know' list
+    if (reviewListHead != NULL)
     {
         const int cntDontKnow = countReviewList(reviewListHead);
 
@@ -174,14 +187,14 @@ void checkIfReview(LinkedList* reviewListHead, const int mode)
 
             if (reviewChoice == 1)
             {
-                // Start review game
-                startMemoryCardGame(reviewListHead, mode);  // Recursively start review
+                // Recursively review "Don't Know" words
+                startMemoryCardGame(reviewListHead, mode);
                 break;
             }
             else if (reviewChoice == 2)
             {
                 printf("\nReview Over!");
-                reviewCompleted = 1;  // Set flag as review not done
+                reviewCompleted = 1;
                 getch();
                 break;
             }
@@ -196,7 +209,7 @@ void checkIfReview(LinkedList* reviewListHead, const int mode)
     else
     {
         printf("\nNo words to review.\n");
-        reviewCompleted = 1;  // Set flag as no words to review
+        reviewCompleted = 1;
         getch();
     }
 }
